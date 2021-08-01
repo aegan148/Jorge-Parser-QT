@@ -1,7 +1,7 @@
 #include "write_XLSX.h"
 #include <cmath>
 
-QString file("D:\\qt_proj\\build-hello-Desktop_Qt_5_13_1_MinGW_32_bit-Debug\\ReadFrom\\traf.xlsx");
+QString file("D:\\qt_proj\\build-hello-Desktop_Qt_5_13_1_MinGW_32_bit-Debug\\ReadFrom\\Pattern.xlsx");
 
 
 void doc_Razdel::calculateData(const std::vector<chapterOBJ>& gChaperList,const std::string& propertysOfDocument, const double& smr){
@@ -20,6 +20,7 @@ void doc_Razdel::calculateData(const std::vector<chapterOBJ>& gChaperList,const 
             doc_Attribute tAttribute;
             tAttribute.namePos= x.Caption;
             tAttribute.edIzm= x.Units;
+            tAttribute.podRazdel = x.Podrazdel;
             tAttribute.unit_kolvo= x.KUnit;
             tAttribute.kolvo=x.Quantity * x.KUnit;
             tAttribute.noFer=x.Code;
@@ -63,6 +64,8 @@ void doc_Razdel::calculateData(const std::vector<chapterOBJ>& gChaperList,const 
                 recalculate =true;
             }
             else {
+                tAttribute.itogo = tAttribute.matPrice + tAttribute.rabPrice;
+                tAttribute.itogoNds = tAttribute.matPriceNds + tAttribute.rabPriceNds;
                 tPodRazdel.atribute.push_back(tAttribute);
                 recalculate =false;
             }
@@ -76,18 +79,71 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
 
     calculateData(gChaperList, propertysOfDocument, SMR);
     int row=7;
-    int col=1;
+    int col=5;
+    int num_Glava=1;
+    int razdelRow=0;
+    int podRazdelRow=0;
+    int podRazdelCount=1;
+
+    bool firstRazdel=true;
+    std::string ss;
+
     QAxObject* excel = new QAxObject("Excel.Application",nullptr);
     QAxObject* workbooks= excel->querySubObject("Workbooks");
     QAxObject* workbook= workbooks->querySubObject("Open(const QString&)",file);
     excel->dynamicCall("SetVisible(bool)",false);
     QAxObject* worksheet= workbook->querySubObject("WorkSheets(int)",1);
     QAxObject* cell;
+    QAxObject* font;
     for (const auto& a : this->glavi) {
+        col=5;
+        razdelRow = row;
+        ss= "Раздел " + std::to_string(num_Glava) +". " + a.nameOfRazdel;
+        cell= worksheet->querySubObject("Cells(int,int)",row,col);
+        cell->dynamicCall("SetValue(const QVariant&)",ss.c_str());
+
+        ss="Range(A"+std::to_string(row)+",O"+std::to_string(row)+")";
+        cell= worksheet->querySubObject( ss.c_str());
+
+        font=cell->querySubObject("Interior");
+        font->setProperty("Color",QColor(245, 245, 220));
+
+        num_Glava++;
+        row++;
+        podRazdelCount=1;
+        firstRazdel=true;
         for (const auto& x : a.atribute) {
+            if(!x.podRazdel.empty()){
+                col=5;
+                podRazdelRow=row;
+                cell= worksheet->querySubObject("Cells(int,int)",row,col);
+                cell->dynamicCall("SetValue(const QVariant&)",x.podRazdel.c_str());
+                                                //"Range(A1,G123)"
+                ss="Range(A"+std::to_string(row)+",O"+std::to_string(row)+")";
+                cell= worksheet->querySubObject( ss.c_str());
+
+                font=cell->querySubObject("Interior");
+                font->setProperty("Color",QColor(255, 255, 240));
+
+                row++;
+                firstRazdel=false;
+            } else if (firstRazdel){
+                col=5;
+                podRazdelRow=row;
+                ss = "Подраздел - " + a.nameOfRazdel;
+                cell= worksheet->querySubObject("Cells(int,int)",row,col);
+                cell->dynamicCall("SetValue(const QVariant&)",ss.c_str());
+                ss="Range(A"+std::to_string(row)+",O"+std::to_string(row)+")";
+                cell= worksheet->querySubObject( ss.c_str());
+                font=cell->querySubObject("Interior");
+                font->setProperty("Color",QColor(255, 255, 240));
+                row++;
+                firstRazdel=false;
+            }
             col=1;
             cell= worksheet->querySubObject("Cells(int,int)",row,col);
-            cell->dynamicCall("SetValue(const QVariant&)",1);
+            cell->dynamicCall("SetValue(const QVariant&)",podRazdelCount);
+            podRazdelCount++;
             col++;
             cell= worksheet->querySubObject("Cells(int,int)",row,col);
             cell->dynamicCall("SetValue(const QVariant&)",x.noLSR.c_str());
@@ -96,8 +152,8 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
             cell->dynamicCall("SetValue(const QVariant&)",x.noFer.c_str());
             col++;
             cell= worksheet->querySubObject("Cells(int,int)",row,col);
-            cell->dynamicCall("SetValue(const QVariant&)",2);
-            col+=4;
+            cell->dynamicCall("SetValue(const QVariant&)",x.noPos);
+            col=5;
             cell= worksheet->querySubObject("Cells(int,int)",row,col);
             cell->dynamicCall("SetValue(const QVariant&)",x.namePos.c_str());
             col++;
@@ -106,6 +162,30 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
             col++;
             cell= worksheet->querySubObject("Cells(int,int)",row,col);
             cell->dynamicCall("SetValue(const QVariant&)",x.kolvo);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.matPrice);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.matPriceNds);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.rabPrice);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.rabPriceNds);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",0);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",0);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.itogo);
+            col++;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",x.itogoNds);
             row++;
         }
     }
@@ -117,7 +197,7 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
     // устанавливаю её размер.
     //rangec->setProperty("RowHeight",20);
     //rangec->setProperty("RowWidth",10);
-    workbook->dynamicCall("Save()");
+    workbook->dynamicCall("SaveAs(const QString&)", QDir::toNativeSeparators("D:\\qt_proj\\build-hello-Desktop_Qt_5_13_1_MinGW_32_bit-Debug\\result\\res.xlsx"));
     workbook->dynamicCall("Close()");
     excel->dynamicCall("Quit()");
 }

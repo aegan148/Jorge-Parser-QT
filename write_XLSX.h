@@ -14,6 +14,7 @@ struct doc_Attribute {
     uint16_t noPos;
     std::string namePos;
     std::string edIzm;
+    std::string podRazdel;
     double kolvo;
     uint32_t unit_kolvo;
     double matPrice;

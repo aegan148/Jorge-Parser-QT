@@ -40,6 +40,10 @@ struct K_koef_struct;
 struct indexes;                 //
 ////////////////////////////////
 
+struct Podrazdel{
+    std::string namePodrazdel;
+    uint16_t numPosition;
+};
 
 struct ResourcesOBJ {
     std::vector<TzrOBJ> tzr;
@@ -50,6 +54,7 @@ struct ResourcesOBJ {
 struct chapterOBJ {
     std::vector<PositionOBJ> tPosition;
     std::string chapterName;
+    std::vector<Podrazdel> podrazlelList;
 };
 
 struct TzmOBJ {
@@ -129,6 +134,7 @@ struct PositionOBJ {
     uint16_t  Vr2001;
     double Quantity;
     double matPriceNdsCalculated;
+    std::string Podrazdel;
     std::string Caption;
     std::string Code;
     std::string Units;

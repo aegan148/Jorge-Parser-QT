@@ -29,6 +29,10 @@ to StringToNumber(const from& rhs) {
     return result;
 };
 
+bool operator==(const Podrazdel& lhs, const uint16_t& rhs){
+    return lhs.numPosition == rhs;
+}
+
 double operator>>(const TzrOBJ& src, double result) {
     double quantity = 0;
     double value = 0;
@@ -153,19 +157,64 @@ void TinyClassObj::goToReadXml()
     {
         doc_PodRazdel chapterToDoc;
         TiXmlElement* chapterEntity= chapterSSEntity;
-        while (chapterSSEntity){
+        while (chapterEntity){
             chapterOBJ lChapersList; // in the end makes push back
-            if (chapterSSEntity->Attribute("Caption")) {
-                lChapersList.chapterName= convertQstringToString( chapterSSEntity->Attribute("Caption"));
+            if (chapterEntity->Attribute("Caption")) {
+                lChapersList.chapterName= convertQstringToString( chapterEntity->Attribute("Caption"));
             }
-            chapterEntity = chapterSSEntity->FirstChildElement("Position");
+
+            TiXmlElement* HeaderEntity = chapterEntity;
+            HeaderEntity = chapterSSEntity->FirstChildElement("Header");
+            while(HeaderEntity){
+                int firstHeader=HeaderEntity->Row();
+                Podrazdel tmpPodrazdel;
+                if(HeaderEntity->Attribute("Caption")){
+                    tmpPodrazdel.namePodrazdel = convertQstringToString( HeaderEntity->Attribute("Caption"));
+                }
+
+                TiXmlElement* findSecondHeader=HeaderEntity;
+                findSecondHeader = findSecondHeader->NextSiblingElement("Header");
+                if(findSecondHeader && firstHeader+1 == findSecondHeader->Row() ){
+                    if(findSecondHeader->Attribute("Caption")){
+                        tmpPodrazdel.namePodrazdel = convertQstringToString( findSecondHeader->Attribute("Caption"));
+                    }
+                }
+
+                HeaderEntity = HeaderEntity->NextSiblingElement("Position");
+                if(HeaderEntity){
+                    TiXmlElement* level = HeaderEntity;
+
+                    std::string ss;
+                    if(level->Attribute("Caption")){
+                        ss=convertQstringToString(level->Attribute("Number"));
+                        tmpPodrazdel.numPosition = StringToNumber<uint16_t, std::string>(ss);
+                    }
+                }
+                lChapersList.podrazlelList.push_back(tmpPodrazdel);
+                HeaderEntity = HeaderEntity->NextSiblingElement("Header");
+            }
+
+            HeaderEntity=nullptr;
+
+            //chapterEntity= chapterSSEntity;
             TiXmlElement* PositionEntity = chapterEntity;
-            while (chapterEntity) {
+            chapterEntity = chapterEntity->FirstChildElement("Position"); // chapterEntity = chapterSSEntity->FirstChildElement("Position");
+            PositionEntity = chapterEntity;
+            while (PositionEntity) {
                 PositionOBJ tPosition;
+
+
+
                 if (PositionEntity)
                 {
+                    tPosition.Podrazdel = tempStr;
                     fillPositionTag(PositionEntity, &tPosition);
                     checkPositionTagForQuantityTag(PositionEntity, &tPosition);
+
+                    auto it =std::find(lChapersList.podrazlelList.begin(), lChapersList.podrazlelList.end(), tPosition.number);
+                    if (it != lChapersList.podrazlelList.end()){
+                        tPosition.Podrazdel = it->namePodrazdel;
+                    }
                 }
                 if (PositionEntity->FirstChildElement("PriceBase")) { PositionEntity = PositionEntity->FirstChildElement("PriceBase"); }
                 if (PositionEntity)
@@ -209,7 +258,8 @@ void TinyClassObj::goToReadXml()
             }
             recalculate_koef_EACH(lChapersList.tPosition);
             this->gChaperList.push_back(lChapersList);
-            chapterSSEntity = chapterSSEntity->NextSiblingElement("Chapter");
+            chapterSSEntity=chapterSSEntity->NextSiblingElement("Chapter");
+            chapterEntity = chapterSSEntity;
         }
     }
 }
