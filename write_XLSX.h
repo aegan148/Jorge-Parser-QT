@@ -8,7 +8,7 @@
 
 //position
 struct doc_Attribute {
-    doc_Attribute():noPos(0), kolvo(0),unit_kolvo(0), matPrice(0), matPriceNds(0), rabPrice(0), rabPriceNds(0), oborPrice(0), oborPriceNds(0), itogo(0), itogoNds(0), smetTrudoemkost(0){};
+    doc_Attribute():noPos(0), kolvo(0),unit_kolvo(0), matPrice(0), matPriceNds(0), rabPrice(0), rabPriceNds(0), oborPrice(0), oborPriceNds(0), itogo(0), itogoNds(0), smetTrudoemkost(0),dont_Add(false){};
     std::string noFer;
     std::string noLSR;
     uint16_t noPos;
@@ -26,6 +26,7 @@ struct doc_Attribute {
     double itogo;
     double itogoNds;
     uint16_t smetTrudoemkost;
+    bool dont_Add;
 };
 //glava
 struct doc_PodRazdel {

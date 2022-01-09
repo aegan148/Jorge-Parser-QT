@@ -33,10 +33,11 @@ public:
     bool checkEqualPriceBase(const PositionOBJ* tPosition);
     void fillLocalKoef(TiXmlElement* entity, PositionOBJ* tPosition);
     void calculatePlanNacl(PositionOBJ* tPosition, const std::vector<vid_Rab>& tVid_Rab, double& OZ, double& ZM, double& koefOZ,double& koefZM);
-    void recalculate_koef_EACH(std::vector<PositionOBJ>& tPosition);
     const indexes& getIndex() const { return this->koefList; }
     const std::vector<vid_Rab>& getVidRabot() const { return this->tVid_Rab; }
     const std::vector<chapterOBJ>& getChapterList()const { return this->gChaperList; }
+    bool checkTheSamePosition(PositionOBJ& tPosition,chapterOBJ& lChapersList);
+    void recalcEachKoef(PositionOBJ& tPosition,chapterOBJ& lChapersList);
     const double& getSMR() const { return this->SMR; }
     const std::string& getProperyes()const {return this->propertysOfDocument;};
 private:

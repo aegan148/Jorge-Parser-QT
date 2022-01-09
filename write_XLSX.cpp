@@ -6,18 +6,21 @@ QString file("D:\\qt_proj\\build-hello-Desktop_Qt_5_13_1_MinGW_32_bit-Debug\\Rea
 
 void doc_Razdel::calculateData(const std::vector<chapterOBJ>& gChaperList,const std::string& propertysOfDocument, const double& smr){
 
-    bool recalculate=false;
     doc_Attribute temp_tAttribute;
 
     for (const auto& a : gChaperList) {
         doc_PodRazdel tPodRazdel;
         tPodRazdel.nameOfRazdel= a.chapterName;
         for (const auto& x : a.tPosition) {
-            if(x.Dont_add) continue;
-            if(x.number == 60){
-                std::cout<<"df";
+
+            if(x.number == 14){
+                std::cout<<"fgh";
             }
             doc_Attribute tAttribute;
+            if(x.Dont_add) {
+                continue;
+            }
+
             tAttribute.namePos= x.Caption;
             tAttribute.edIzm= x.Units;
             tAttribute.podRazdel = x.Podrazdel;
@@ -48,27 +51,9 @@ void doc_Razdel::calculateData(const std::vector<chapterOBJ>& gChaperList,const 
             tAttribute.rabPriceNds = int(tAttribute.rabPriceNds*100 +0.5)/100.0;
             tAttribute.rabPrice= tAttribute.rabPriceNds / tAttribute.kolvo;
 
-            if(recalculate){
-                tAttribute.noFer = temp_tAttribute.noFer;
-                tAttribute.noLSR = temp_tAttribute.noLSR;
-                tAttribute.namePos = temp_tAttribute.namePos;
-                tAttribute.noPos = temp_tAttribute.noPos;
-                tAttribute.matPrice += temp_tAttribute.matPrice;
-                tAttribute.matPriceNds += temp_tAttribute.matPriceNds;
-                tAttribute.rabPrice += temp_tAttribute.rabPrice;
-                tAttribute.rabPriceNds += temp_tAttribute.rabPriceNds;
-            }
-
-            if(x.koef_each){
-                temp_tAttribute = tAttribute;
-                recalculate =true;
-            }
-            else {
-                tAttribute.itogo = tAttribute.matPrice + tAttribute.rabPrice;
-                tAttribute.itogoNds = tAttribute.matPriceNds + tAttribute.rabPriceNds;
-                tPodRazdel.atribute.push_back(tAttribute);
-                recalculate =false;
-            }
+            tAttribute.itogo = tAttribute.matPrice + tAttribute.rabPrice;
+            tAttribute.itogoNds = tAttribute.matPriceNds + tAttribute.rabPriceNds;
+            tPodRazdel.atribute.push_back(tAttribute);
         }
         this->glavi.push_back(tPodRazdel);
     }
@@ -96,23 +81,30 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
     QAxObject* cell;
     QAxObject* font;
     for (const auto& a : this->glavi) {
-        col=5;
-        razdelRow = row;
-        ss= "Раздел " + std::to_string(num_Glava) +". " + a.nameOfRazdel;
-        cell= worksheet->querySubObject("Cells(int,int)",row,col);
-        cell->dynamicCall("SetValue(const QVariant&)",ss.c_str());
+        if(!a.atribute.empty()){
+            col=5;
+            razdelRow = row;
+            ss= "Раздел " + std::to_string(num_Glava) +". " + a.nameOfRazdel;
+            cell= worksheet->querySubObject("Cells(int,int)",row,col);
+            cell->dynamicCall("SetValue(const QVariant&)",ss.c_str());
 
-        ss="Range(A"+std::to_string(row)+",O"+std::to_string(row)+")";
-        cell= worksheet->querySubObject( ss.c_str());
+            ss="Range(A"+std::to_string(row)+",O"+std::to_string(row)+")";
+            cell= worksheet->querySubObject( ss.c_str());
 
-        font=cell->querySubObject("Interior");
-        font->setProperty("Color",QColor(245, 245, 220));
+            font=cell->querySubObject("Interior");
+            font->setProperty("Color",QColor(245, 245, 220));
 
+
+            row++;
+            podRazdelCount=1;
+            firstRazdel=true;
+        }
         num_Glava++;
-        row++;
-        podRazdelCount=1;
-        firstRazdel=true;
         for (const auto& x : a.atribute) {
+
+            if(x.noPos == 238){
+                std::cout<<"fgh";
+            }
             if(!x.podRazdel.empty()){
                 col=5;
                 podRazdelRow=row;
@@ -127,7 +119,8 @@ void doc_Razdel::GomakeXlsx(const std::vector<chapterOBJ>& gChaperList, const st
 
                 row++;
                 firstRazdel=false;
-            } else if (firstRazdel){
+            }
+            else if (firstRazdel){
                 col=5;
                 podRazdelRow=row;
                 ss = "Подраздел - " + a.nameOfRazdel;

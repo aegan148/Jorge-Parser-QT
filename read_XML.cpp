@@ -29,6 +29,25 @@ to StringToNumber(const from& rhs) {
     return result;
 };
 
+bool operator==( PositionOBJ& lhs,const PositionOBJ& rhs){
+    if(rhs.koef_each){
+        int pos = lhs.Code.find(rhs.each_FER_index);
+        if(pos != -1){
+            return true;
+        }
+        else return false;
+    }
+    else return (lhs.Caption == rhs.Caption) && (lhs.num_Podrazdel== rhs.num_Podrazdel) && (rhs.number - lhs.number <3 )&& !lhs.Dont_add;
+}
+
+void operator+=(PositionOBJ& lhs, PositionOBJ& rhs){
+    lhs.Quantity+=rhs.Quantity;
+    lhs.tPositionCalculatedVidRab.Nacl+= rhs.tPositionCalculatedVidRab.Nacl;
+    lhs.tPositionCalculatedVidRab.Plan+= rhs.tPositionCalculatedVidRab.Plan;
+    lhs.matPriceNdsCalculated+=rhs.matPriceNdsCalculated;
+
+}
+
 bool operator==(const Podrazdel& lhs, const uint16_t& rhs){
     return lhs.numPosition == rhs;
 }
@@ -180,15 +199,28 @@ void TinyClassObj::goToReadXml()
                     }
                 }
 
-                HeaderEntity = HeaderEntity->NextSiblingElement("Position");
-                if(HeaderEntity){
-                    TiXmlElement* level = HeaderEntity;
+                TiXmlElement* positionEntity=HeaderEntity;
+                positionEntity = positionEntity->NextSiblingElement("Position");
+                bool innactive=true;
+                while(positionEntity){
+                    TiXmlElement* level = positionEntity;
 
                     std::string ss;
-                    if(level->Attribute("Caption")){
-                        ss=convertQstringToString(level->Attribute("Number"));
-                        tmpPodrazdel.numPosition = StringToNumber<uint16_t, std::string>(ss);
+                    if(level->Attribute("Options")){
+                        std::string tmp;
+                        tmp=convertQstringToString(level->Attribute("Options"));
+                        if(tmp == "Inactive"){}
+                        else innactive =false;
                     }
+                    else innactive =false;
+                    if(!innactive){
+                        if(level->Attribute("Caption")){
+                            ss=convertQstringToString(level->Attribute("Number"));
+                            tmpPodrazdel.numPosition = StringToNumber<uint16_t, std::string>(ss);
+                            break;
+                        }
+                    }
+                    positionEntity = positionEntity->NextSiblingElement("Position");
                 }
                 lChapersList.podrazlelList.push_back(tmpPodrazdel);
                 HeaderEntity = HeaderEntity->NextSiblingElement("Header");
@@ -200,6 +232,8 @@ void TinyClassObj::goToReadXml()
             TiXmlElement* PositionEntity = chapterEntity;
             chapterEntity = chapterEntity->FirstChildElement("Position"); // chapterEntity = chapterSSEntity->FirstChildElement("Position");
             PositionEntity = chapterEntity;
+
+            uint16_t num_Podrazdel=1;
             while (PositionEntity) {
                 PositionOBJ tPosition;
 
@@ -210,11 +244,16 @@ void TinyClassObj::goToReadXml()
                     tPosition.Podrazdel = tempStr;
                     fillPositionTag(PositionEntity, &tPosition);
                     checkPositionTagForQuantityTag(PositionEntity, &tPosition);
+                    if(tPosition.number == 259){
+                        std::cout<<"d";
+                    }
 
                     auto it =std::find(lChapersList.podrazlelList.begin(), lChapersList.podrazlelList.end(), tPosition.number);
                     if (it != lChapersList.podrazlelList.end()){
                         tPosition.Podrazdel = it->namePodrazdel;
+                        num_Podrazdel++;
                     }
+                    tPosition.num_Podrazdel= num_Podrazdel;
                 }
                 if (PositionEntity->FirstChildElement("PriceBase")) { PositionEntity = PositionEntity->FirstChildElement("PriceBase"); }
                 if (PositionEntity)
@@ -252,11 +291,11 @@ void TinyClassObj::goToReadXml()
                     fillWorkListTag(PositionEntity, &tWorkList);
                 }
                 tPosition.tPositionWorkList = tWorkList;
-                lChapersList.tPosition.push_back(tPosition);
+                if(tPosition.koef_each) recalcEachKoef(tPosition,lChapersList);
+                else if( !checkTheSamePosition(tPosition,lChapersList) )lChapersList.tPosition.push_back(tPosition);
                 chapterEntity = chapterEntity->NextSiblingElement("Position");
                 PositionEntity = chapterEntity;
             }
-            recalculate_koef_EACH(lChapersList.tPosition);
             this->gChaperList.push_back(lChapersList);
             chapterSSEntity=chapterSSEntity->NextSiblingElement("Chapter");
             chapterEntity = chapterSSEntity;
@@ -264,25 +303,29 @@ void TinyClassObj::goToReadXml()
     }
 }
 
-void TinyClassObj::recalculate_koef_EACH(std::vector<PositionOBJ>& tPosition){
+void TinyClassObj::recalcEachKoef(PositionOBJ& tPosition,chapterOBJ& lChapersList){
+    auto it = std::find(lChapersList.tPosition.rbegin(),lChapersList.tPosition.rend(), tPosition);
+    if(it != lChapersList.tPosition.rend()){
+        int pos = it->number;
+        it->tPositionPriceBaseCalculated.EM += tPosition.tPositionPriceBaseCalculated.EM;
+        it->tPositionPriceBaseCalculated.MT += tPosition.tPositionPriceBaseCalculated.MT;
+        it->tPositionPriceBaseCalculated.OZ += tPosition.tPositionPriceBaseCalculated.OZ;
+        it->tPositionPriceBaseCalculated.PZ += tPosition.tPositionPriceBaseCalculated.PZ;
+        it->tPositionPriceBaseCalculated.ZM += tPosition.tPositionPriceBaseCalculated.ZM;
+        it->matPriceNdsCalculated += tPosition.matPriceNdsCalculated;
+        it->tPositionCalculatedVidRab.Nacl += tPosition.tPositionCalculatedVidRab.Nacl;
+        it->tPositionCalculatedVidRab.Plan += tPosition.tPositionCalculatedVidRab.Plan;
+    };
 
-    std::vector<uint32_t> positions;
+}
 
-    for(auto& x: tPosition){
-        if (x.koef_each){
-            positions.push_back(x.number);
-            x.koef_each =false;
-        }
+bool TinyClassObj::checkTheSamePosition(PositionOBJ& tPosition,chapterOBJ& lChapersList){
+    auto it = std::find(lChapersList.tPosition.begin(),lChapersList.tPosition.end(),tPosition);
+    if (it != lChapersList.tPosition.end() ){
+        *it += tPosition;
+        return true;
     }
-    for(auto& x: tPosition){
-        for(auto & y: positions){
-            uint32_t value_Minus= y-1;
-            if (x.number == value_Minus){
-                x.koef_each =true;
-            }
-        }
-    }
-
+    return false;
 }
 
 void readNumberOfVrsLinks(indexes& MainkoefList, K_koef_struct& tKoef, std::string& str) {
@@ -466,12 +509,21 @@ void TinyClassObj::fillPositionTag(TiXmlElement* entity, PositionOBJ* tPosition)
     if(level->Attribute("Caption")){
         tPosition->Caption=convertQstringToString(level->Attribute("Caption"));       
 
-        std::string word=" на каждый";
+        std::string word="а кажд";
         int pos = tPosition->Caption.find(word); // поиск
 
         if (pos != -1)
         {
+            //tPosition->koef_each=true;
+            tPosition->Dont_add=true;
+        }
+        word="к расценке ";
+        pos = tPosition->Caption.find(word); // поиск 12
+
+        if (pos != -1)
+        {
             tPosition->koef_each=true;
+            std::copy(tPosition->Caption.begin() + pos+20, tPosition->Caption.begin() +pos+ 13+19, std::back_inserter(tPosition->each_FER_index));
         }
 
     }

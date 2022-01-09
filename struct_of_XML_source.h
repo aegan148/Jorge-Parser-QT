@@ -123,7 +123,7 @@ struct vid_Rab {
 };
 
 struct PositionOBJ {
-    PositionOBJ() :Dont_add(false), badCalculate(false),koef_each(false), KUnit(1), number(0), indexCode(0),  Vr2001(0),Quantity(0), matPriceNdsCalculated(0) {};
+    PositionOBJ() :Dont_add(false), badCalculate(false),koef_each(false), KUnit(1), number(0), indexCode(0),  Vr2001(0),num_Podrazdel(0),Quantity(0), matPriceNdsCalculated(0) {};
     ~PositionOBJ() {};
     bool Dont_add;
     bool badCalculate;
@@ -132,12 +132,15 @@ struct PositionOBJ {
     uint32_t number;
     uint16_t indexCode;
     uint16_t  Vr2001;
+    uint16_t num_Podrazdel;
     double Quantity;
     double matPriceNdsCalculated;
     std::string Podrazdel;
     std::string Caption;
     std::string Code;
+    std::string FER_index;
     std::string Units;
+    std::string each_FER_index;
     PriceBaseStruct tPositionPriceBaseReaded;           //это и ниже потом сравниваются
     PriceBaseStruct tPositionPriceBaseCalculated;           //вот это сравнивается
     vid_Rab tPositionCalculatedVidRab;
